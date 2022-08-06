@@ -1,6 +1,6 @@
 # 漢字読み取り音読
 
-[漢字読み取りを音読でできるゲーム](https://marmooo.github.io/talk-yomi/)です。
+[音読で漢字の読み取り練習ができるゲーム](https://marmooo.github.io/talk-yomi/)です。
 
 ## Build
 
