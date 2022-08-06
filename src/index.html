@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="ja">
+  <head prefix="og: http://ogp.me/ns#">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="音読で漢字の読み取り練習ができるゲームです。">
+    <title>漢字読み取り音読</title>
+    <meta property="og:title" content="漢字読み取り音読">
+    <meta property="og:site_name" content="漢字読み取り音読">
+    <meta property="og:description" content="音読で漢字の読み取り練習ができるゲームです。">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://marmooo.github.io/talk-yomi/">
+    <meta property="og:image" content="https://marmooo.github.io/talk-yomi/favicon/apple-touch-icon.png">
+    <meta name="twitter:card" content="summary">
+    <!-- <!-1- Global site tag (gtag.js) - Google Analytics -1-> -->
+    <!-- <script async src="https://www.googletagmanager.com/gtag/js?id=G-F2179JXDYY"></script> -->
+    <!-- <script> -->
+    <!--   window.dataLayer = window.dataLayer || []; -->
+    <!--   function gtag(){dataLayer.push(arguments);} -->
+    <!--   gtag('js', new Date()); -->
+    <!--   gtag('config', 'G-F2179JXDYY'); -->
+    <!-- </script> -->
+    <!-- <script> -->
+    <!--   if ('serviceWorker' in navigator) { -->
+    <!--     window.addEventListener('load', function() { -->
+    <!--       navigator.serviceWorker.register('/talk-yomi/sw.js'); -->
+    <!--     }); -->
+    <!--   } -->
+    <!-- </script> -->
+    <link rel="icon" type="image/png" href="/talk-yomi/favicon/favicon.png">
+    <link rel="icon" type="image/svg+xml" href="/talk-yomi/favicon/favicon.svg">
+    <link rel="apple-touch-icon" sizes="180x180" href="/talk-yomi/favicon/apple-touch-icon.png">
+    <link rel="manifest" href="/talk-yomi/favicon/site.webmanifest">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
+    <style>
+      @font-face {
+        font-family: textar-light;
+        src: local('Textar'),
+          url('https://marmooo.github.io/fonts/textar-light.woff2') format('woff2');
+        font-display: swap;
+      }
+      pre.aa {
+        font-size: 1rem;
+        display: inline-block;
+        overflow: hidden;
+        text-align: left;
+        font-family: textar-light;
+        line-height: 1.1;
+        white-space: pre;
+        word-wrap: normal;
+      }
+      .tile { width:84px; padding-bottom:1rem; line-height:1.1rem; padding:.25rem; }
+      @font-face {
+        font-family: textar-light;
+        src: url('https://marmooo.github.io/fonts/textar-light.woff2') format('woff2');
+        font-display: swap;
+      }
+      pre.aa {
+        font-size: 1rem;
+        display: inline-block;
+        text-align: left;
+        font-family: textar-light;
+        line-height: 1.1;
+        white-space: pre;
+        word-wrap: normal;
+      }
+      canvas { width:140px; height:140px; border:solid 1px; }
+      .eraser { display:block; margin:auto; cursor:pointer; }
+      #counter {
+        font-size:10rem; width:12rem; height:12rem; line-height:12rem; border-radius: 50%;
+        background:tomato; margin:auto; }
+      html[data-theme="dark"] { filter: invert(1) hue-rotate(180deg); }
+      @-moz-document url-prefix() { html[data-theme="dark"] { background-color:black; } }
+    </style>
+  </head>
+  <body>
+    <header>
+      <nav class="navbar navbar-expand navbar-light">
+        <div class="container flex-wrap">
+          <a class="navbar-brand" href="/talk-yomi/">
+            <img alt="漢字読み取り音読" src="/talk-yomi/favicon/favicon.svg" width="32" height="32">
+            漢字読み取り音読
+          </a>
+          <div class="navbar-nav">
+            <select title="学年" id="gradeOption" class="form-select form-select-sm">
+              <option>小1</option>
+              <option>小2</option>
+              <option>小3</option>
+              <option selected>小4</option>
+              <option>小5</option>
+              <option>小6</option>
+              <option>中1/2</option>
+              <option>中3</option>
+            </select>
+            <button title="ダークモード切替" id="toggleDarkMode" class="fs-4 btn p-0 ms-1">🌓</button>
+          </div>
+        </div>
+      </nav>
+    </header>
+    <main id="container" class="container">
+      <noscript>
+        <div class="alert alert-warning">JavaScript を ON にしてください</div>
+      </noscript>
+      <div id="noTTS" class="alert alert-warning d-none">
+        <p>お使いのブラウザは音声読み上げに対応していません。
+        Firefox for Linux は発話モジュールをインストールしてください。例:
+        </p>
+        <pre><code>sudo apt install speech-dispatcher
+sudo apt install festival speech-dispatcher-festival</code></pre>
+      </div>
+      <div id="countPanel" class="text-center d-none notranslate">
+        <div id="countdown">
+          <div id="counter">3</div>
+          <pre class="aa">
+
+　　 彡⌒ミ 
+　　 ( ・ω・ ) 
+　　○=｛=｝〇, 
+　 　|:::::::::＼, ', ´ 
+､､､､し ､､､((（.＠）ｗｗｗｗｗｗｗ
+          </pre>
+        </div>
+      </div>
+      <div id="scorePanel" class="text-center pb-3 d-none">
+        <h3 class="pt-3">スコア</h3>
+        <div class="d-flex justify-content-center align-items-center">
+          <div class="notranslate">
+            <pre class="aa">　┏━━━━━━━━━┓
+　┃ 　 　　 彡 ⌒ ミ　　 　 ┃
+　┃ 　　　 (´･ω･`；).. 　 　┃
+　彡 ⌒ ミ⊂　　　9m)　　　┃
+　.(　　　　)　 Ｙ 　 人. 　 　 ┃
+⊂ 　　 　 ﾌ　（＿入_| 　　　┃
+　　人　 Ｙ　━━━━━━┛
+　（＿入_|
+            </pre>
+          </div>
+          <div class="ps-1">スコアだよ！</div>
+        </div>
+        <div class="h2 pb-3 notranslate">
+          <span id="score" class="h1">0</span> /
+          <span id="total" class="h1">0</span>
+        </div>
+        <a id="twitter" target="_blank" href="https://twitter.com/intent/tweet?text=漢字読み取り音読で遊んだよ!&url=https%3a%2f%2fmarmooo.github.com/talk-yomi/%2f&hashtags=漢字読み取り音読" class="btn btn-primary btn-lg m-1" role="button">Twitter でつぶやく</a>
+        <button id="restartButton" type="button" class="btn btn-primary btn-lg m-1">リスタート</button>
+        <div id="badges" class="pt-4"></div>
+      </div>
+      <div id="playPanel">
+        <div class="row">
+          <div class="col-md">
+            <p>音読で漢字の読み取り練習ができるゲームです。</p>
+            <div class="d-flex">
+              <div class="notranslate">
+                <pre class="aa">彡 ⌒ ミ
+(；`・ω・）　　｡･ﾟ･⌒）
+/　　 ｏ━ヽニニフ))
+しー-Ｊ
+                </pre>
+              </div>
+              <div class="ps-2">3分でどれくらい解けるかな？</div>
+            </div>
+          </div>
+          <div class="col-md text-center">
+            <div class="alert alert-info">
+              <div class="d-flex flex-wrap justify-content-center">
+                <div class="h5 text-nowrap notranslate">
+                  <span id="time">180</span>
+                  <span> / 180 sec</span>
+                </div>
+              </div>
+              <div class="mt-2">
+                <button id="startButton" class="btn btn-primary btn-lg">スタート</button>
+                <button id="showAnswer" class="btn btn-lg btn-secondary">こたえ</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="text-center">
+          <div class="alert alert-primary notranslate">
+            <h3>
+              <span id="problem">漢字</span>
+              <span id="answer" class="text-secondary d-none">かんじ</span>
+            </h3>
+          </div>
+          <div id="recognitionPanel" class="text-center pt-1">
+            <span id="replyPlease" class="me-2 h5">読み方を答えてください</span>
+            <span id="reply" class="me-2 h5 notranslate"></span>
+            <button id="startVoiceInput" title="音声入力を開始する" class="btn btn-outline-secondary rounded-pill">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="black" width="64" height="64"><path d="M0 0h24v24H0z" fill="none"/><path d="M12 14c1.66 0 2.99-1.34 2.99-3L15 5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/></svg>
+            </button>
+            <button id="stopVoiceInput" title="音声入力を終了する" class="btn btn-outline-secondary rounded-pill d-none">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="64" height="64"><path d="M0 0h24v24H0zm0 0h24v24H0z" fill="none"/><path d="M19 11h-1.7c0 .74-.16 1.43-.43 2.05l1.23 1.23c.56-.98.9-2.09.9-3.28zm-4.02.17c0-.06.02-.11.02-.17V5c0-1.66-1.34-3-3-3S9 3.34 9 5v.18l5.98 5.99zM4.27 3L3 4.27l6.01 6.01V11c0 1.66 1.33 3 2.99 3 .22 0 .44-.03.65-.08l1.66 1.66c-.71.33-1.5.52-2.31.52-2.76 0-5.3-2.1-5.3-5.1H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c.91-.13 1.77-.45 2.54-.9L19.73 21 21 19.73 4.27 3z"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="pt-5 d-md-block d-none text-center">
+        他にもいろいろなゲームがあるよ！
+        <div class="text-center d-flex flex-wrap justify-content-center pt-3">
+          <div class="tile">
+            <a href="https://marmooo.github.io/pronounce-talk/">
+              <img alt="Pronounce Dojo" src="https://marmooo.github.io/pronounce-talk/favicon/favicon.svg" width="64" height="64" loading="lazy">
+              <br>
+              <small>Pronounce Talk</small>
+            </a>
+          </div>
+          <div class="tile">
+            <a href="https://marmooo.github.io/touch-shodo/ja/">
+              <img alt="タッチ書道ドリル" src="https://marmooo.github.io/touch-shodo/favicon/favicon.svg" width="64" height="64" loading="lazy">
+              <br>
+              <small>タッチ書道ドリル</small>
+            </a>
+          </div>
+          <div class="tile">
+            <a href="https://marmooo.github.io/type-numbers/">
+              <img alt="Type Numbers" src="https://marmooo.github.io/type-numbers/favicon/favicon.svg" width="64" height="64" loading="lazy">
+              <br>
+              <small>Type Numbers</small>
+            </a>
+          </div>
+        </div>
+      </div>
+    </main>
+    <footer class="pt-4 alert text-center">
+      <div class="table-responsive">
+        <label>サポート状況 (2022):</label>
+        <table class="table table-sm table-striped w-auto m-auto text-nowrap">
+          <tbody>
+            <tr class="notranslate"><th></th><th>Chrome</th><th>Edge</th><th>Safari</th><th>Firefox</th></tr>
+            <tr><td>音声認識</td><td>⭕</td><td>❌</td><td>❌</td><td>❌</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="pt-3">
+        <a class="px-1" href="/">Home</a>
+        <a class="px-1" href="/terms/">Terms</a>
+        <a class="px-1" href="https://github.com/marmooo/talk-yomi">Contact</a>
+      </div>
+      <div class="text-muted">&copy; <a href="https://github.com/marmooo">marmooo</a></div>
+    </footer>
+    <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.7/dist/signature_pad.umd.min.js" integrity="sha256-CMptYYXRcNVLvNSGRK6ZLrOBRO729Cg5aAC8l34V+nI=" crossorigin="anonymous"></script>
+    <script src="index.js"></script>
+  </body>
+</html>
