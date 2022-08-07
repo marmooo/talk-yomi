@@ -523,6 +523,7 @@ function hiraToKana(str) {
 }
 
 function formatLongNote(text) {
+  text = hiraToKana(text);
   return text[0] + text.slice(1).replace(/[アイウエオ]/g, "ー");
 }
 
