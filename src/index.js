@@ -538,9 +538,9 @@ function isEqualsLongNote(reply, answer) {
 }
 
 function isEquals(reply, answer, yomiDict) {
-  if (!isEqualsLongNote) return false;
-  if (!isEqualsYomi) return false;
-  return true;
+  if (isEqualsLongNote(reply, answer)) return true;
+  if (isEqualsYomi(reply, answer, yomiDict)) return true;
+  return false;
 }
 
 initProblems();
