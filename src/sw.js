@@ -1,4 +1,4 @@
-var CACHE_NAME = "2022-08-06 11:00";
+var CACHE_NAME = "2022-08-08 08:20";
 var urlsToCache = [
   "/talk-yomi/",
   "/talk-yomi/index.js",

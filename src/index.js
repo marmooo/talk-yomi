@@ -413,7 +413,7 @@ function formatSentence(sentence) {
     .replace(/\d+/g, (n) => numbersToKanji(n));
 }
 
-function isEquals(reply, answer, yomiDict) {
+function isEqualsYomi(reply, answer, yomiDict) {
   // 音声認識では記号が付かないので、解答側で使う一部記号だけを揃える
   const formatedReply = formatSentence(reply);
   const formatedAnswer = formatSentence(answer);
@@ -520,6 +520,26 @@ function hiraToKana(str) {
     const chr = match.charCodeAt(0) + 0x60;
     return String.fromCharCode(chr);
   });
+}
+
+function formatLongNote(text) {
+  return text[0] + text.slice(1).replace(/[アイウエオ]/g, "ー");
+}
+
+function isEqualsLongNote(reply, answer) {
+  const formatReply = formatLongNote(reply);
+  const formatAnswer = formatLongNote(answer);
+  if (formatAnswer == formatReply) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+function isEquals(reply, answer, yomiDict) {
+  if (!isEqualsLongNote) return false;
+  if (!isEqualsYomi) return false;
+  return true;
 }
 
 initProblems();
