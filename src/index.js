@@ -222,11 +222,9 @@ function setVoiceInput() {
     voiceInput.onresult = (event) => {
       const replyText = event.results[0][0].transcript;
       const replyObj = document.getElementById("reply");
-      if (
-        answerYomis.some((answerYomi) =>
-          isEquals(replyText, answerYomi, yomiDict)
-        )
-      ) {
+      const correct = answerYomis
+        .some((answerYomi) => isEquals(replyText, answerYomi, yomiDict));
+      if (correct) {
         playAudio("correct");
         replyObj.textContent = "⭕ " + replyText;
         nextProblem();
