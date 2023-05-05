@@ -9,13 +9,15 @@ let problems = [];
 let problemCandidate;
 let answerKanji = "漢字";
 let answerYomis = ["かんじ"];
-let japaneseVoices = [];
-const voiceInput = setVoiceInput();
 let correctCount = problemCount = 0;
-let endAudio, correctAudio, incorrectAudio;
-loadAudios();
-const AudioContext = window.AudioContext || window.webkitAudioContext;
 const audioContext = new AudioContext();
+const audioBufferCache = {};
+loadAudio("end", "mp3/end.mp3");
+loadAudio("correct", "mp3/correct3.mp3");
+loadAudio("incorrect", "mp3/incorrect1.mp3");
+let japaneseVoices = [];
+loadVoices();
+const voiceInput = setVoiceInput();
 loadConfig();
 
 function loadConfig() {
@@ -34,50 +36,33 @@ function toggleDarkMode() {
   }
 }
 
-function playAudio(audioBuffer, volume) {
-  const audioSource = audioContext.createBufferSource();
-  audioSource.buffer = audioBuffer;
+async function playAudio(name, volume) {
+  const audioBuffer = await loadAudio(name, audioBufferCache[name]);
+  const sourceNode = audioContext.createBufferSource();
+  sourceNode.buffer = audioBuffer;
   if (volume) {
     const gainNode = audioContext.createGain();
     gainNode.gain.value = volume;
     gainNode.connect(audioContext.destination);
-    audioSource.connect(gainNode);
-    audioSource.start();
+    sourceNode.connect(gainNode);
+    sourceNode.start();
   } else {
-    audioSource.connect(audioContext.destination);
-    audioSource.start();
+    sourceNode.connect(audioContext.destination);
+    sourceNode.start();
   }
+}
+
+async function loadAudio(name, url) {
+  if (audioBufferCache[name]) return audioBufferCache[name];
+  const response = await fetch(url);
+  const arrayBuffer = await response.arrayBuffer();
+  const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+  audioBufferCache[name] = audioBuffer;
+  return audioBuffer;
 }
 
 function unlockAudio() {
   audioContext.resume();
-}
-
-function loadAudio(url) {
-  return fetch(url)
-    .then((response) => response.arrayBuffer())
-    .then((arrayBuffer) => {
-      return new Promise((resolve, reject) => {
-        audioContext.decodeAudioData(arrayBuffer, (audioBuffer) => {
-          resolve(audioBuffer);
-        }, (err) => {
-          reject(err);
-        });
-      });
-    });
-}
-
-function loadAudios() {
-  promises = [
-    loadAudio("mp3/end.mp3"),
-    loadAudio("mp3/correct3.mp3"),
-    loadAudio("mp3/incorrect1.mp3"),
-  ];
-  Promise.all(promises).then((audioBuffers) => {
-    endAudio = audioBuffers[0];
-    correctAudio = audioBuffers[1];
-    incorrectAudio = audioBuffers[2];
-  });
 }
 
 function loadVoices() {
@@ -104,7 +89,6 @@ function loadVoices() {
     japaneseVoices = voices.filter((voice) => voice.lang == "ja-JP");
   });
 }
-loadVoices();
 
 function speak(text) {
   speechSynthesis.cancel();
@@ -180,7 +164,7 @@ function startGameTimer() {
       timeNode.textContent = t - 1;
     } else {
       clearInterval(gameTimer);
-      playAudio(endAudio);
+      playAudio("end");
       playPanel.classList.add("d-none");
       scorePanel.classList.remove("d-none");
       document.getElementById("score").textContent = correctCount;
@@ -243,12 +227,12 @@ function setVoiceInput() {
           isEquals(replyText, answerYomi, yomiDict)
         )
       ) {
-        playAudio(correctAudio);
+        playAudio("correct");
         replyObj.textContent = "⭕ " + replyText;
         nextProblem();
         correctCount += 1;
       } else {
-        playAudio(incorrectAudio);
+        playAudio("incorrect");
         replyObj.textContent = replyText;
       }
       replyPlease.classList.add("d-none");
@@ -323,7 +307,10 @@ const numbersToKanji = (num) => {
     return "";
   }
   if (!(/^-?[0-9]+$/g.test(num))) {
-    throw new TypeError("半角数字以外の文字が含まれています。漢数字に変換できませんでした。-> " + num);
+    throw new TypeError(
+      "半角数字以外の文字が含まれています。漢数字に変換できませんでした。-> " +
+        num,
+    );
   }
   num = Number(num);
   if (!Number.isSafeInteger(num)) {
