@@ -1,5 +1,5 @@
 import { readLines } from "https://deno.land/std/io/mod.ts";
-import { YomiDict } from "https://raw.githubusercontent.com/marmooo/yomi-dict/v0.1.4/mod.js";
+import { YomiDict } from "https://raw.githubusercontent.com/marmooo/yomi-dict/v0.1.5/mod.js";
 
 async function getGradedWords(filepath, threshold) {
   const examples = [];
@@ -28,7 +28,7 @@ async function getGradedIdioms(level, threshold) {
 
 async function build(threshold) {
   const yomiDict = await YomiDict.load("yomi-dict/yomi.csv");
-  for (let level = 1; level <= 10; level++) {
+  for (let level = 1; level <= 12; level++) {
     const result = [];
     let words = [];
     const vocab = await getGradedVocab(level, threshold);
