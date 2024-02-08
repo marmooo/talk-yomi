@@ -1,5 +1,5 @@
 import { readLines } from "https://deno.land/std/io/mod.ts";
-import { YomiDict } from "https://raw.githubusercontent.com/marmooo/yomi-dict/v0.1.6/mod.js";
+import { YomiDict } from "https://raw.githubusercontent.com/marmooo/yomi-dict/v0.1.7/mod.js";
 
 async function getGradedWords(filepath, threshold) {
   const examples = [];
