@@ -1,10 +1,13 @@
 import { assertEquals } from "https://deno.land/std/testing/asserts.ts";
-import { readLines } from "https://deno.land/std/io/mod.ts";
+import { TextLineStream } from "jsr:@std/streams/text-line-stream";
 
 async function loadTestData(tsvFile) {
   const arr = [];
-  const fileReader = await Deno.open(tsvFile);
-  for await (const line of readLines(fileReader)) {
+  const file = await Deno.open(tsvFile);
+  const lineStream = file.readable
+    .pipeThrough(new TextDecoderStream())
+    .pipeThrough(new TextLineStream());
+  for await (const line of lineStream) {
     if (!line) continue;
     if (line.startsWith("#")) continue;
     // if (line.startsWith("#")) {
@@ -19,8 +22,11 @@ async function loadTestData(tsvFile) {
 async function initYomiDict(yomiFile) {
   // https://jsben.ch/q4RPK
   const yomiDict = new Map();
-  const fileReader = await Deno.open(yomiFile);
-  for await (const line of readLines(fileReader)) {
+  const file = await Deno.open(yomiFile);
+  const lineStream = file.readable
+    .pipeThrough(new TextDecoderStream())
+    .pipeThrough(new TextLineStream());
+  for await (const line of lineStream) {
     if (!line) continue;
     line.split("\n").forEach((line) => {
       const arr = line.split(",");
@@ -57,7 +63,10 @@ const numbersToKanji = (num) => {
     return "";
   }
   if (!(/^-?[0-9]+$/g.test(num))) {
-    throw new TypeError("半角数字以外の文字が含まれています。漢数字に変換できませんでした。-> " + num);
+    throw new TypeError(
+      "半角数字以外の文字が含まれています。漢数字に変換できませんでした。-> " +
+        num,
+    );
   }
   num = Number(num);
   if (!Number.isSafeInteger(num)) {
@@ -153,7 +162,7 @@ function isEquals(reply, answer, yomiDict) {
   const formatedReply = formatSentence(reply);
   const formatedAnswer = formatSentence(answer);
   const maxLength = 5; // build.js で制限して高速化 (普通は残り文字数)
-  const maxYomiNum = 10;  // yomi-dict の最大読み方パターン数
+  const maxYomiNum = 10; // yomi-dict の最大読み方パターン数
   const stop = formatedAnswer.length * formatedAnswer.length * maxYomiNum;
   let cnt = 0;
   let i = 0;
@@ -178,7 +187,7 @@ function isEquals(reply, answer, yomiDict) {
           return false;
         }
       });
-      pl = matched
+      pl = matched;
       if (matched.length > 0) {
         const yomi = matched[l];
         if (yomi) {
