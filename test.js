@@ -1,5 +1,5 @@
-import { assertEquals } from "https://deno.land/std/testing/asserts.ts";
 import { TextLineStream } from "jsr:@std/streams/text-line-stream";
+import { assertEquals } from "jsr:@std/assert/equals";
 
 async function loadTestData(tsvFile) {
   const arr = [];
