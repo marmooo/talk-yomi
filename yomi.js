@@ -27,7 +27,6 @@ async function getMorphemes(tsvFile) {
     .pipeThrough(new TextDecoderStream())
     .pipeThrough(new TextLineStream());
   for await (const line of lineStream) {
-    if (!line) continue;
     if (line.startsWith("#")) continue;
     // if (line.startsWith("#")) {
     //   line = line.slice(2);
@@ -57,7 +56,6 @@ async function loadSudachiDict() {
       .pipeThrough(new TextDecoderStream())
       .pipeThrough(new TextLineStream());
     for await (const line of lineStream) {
-      if (!line) continue;
       const arr = line.split(",");
       const lemma = hiraToKana(arr[0]);
       const leftId = arr[1];
@@ -92,7 +90,6 @@ async function parseOnkun(dict) {
       .pipeThrough(new TextDecoderStream())
       .pipeThrough(new TextLineStream());
     for await (const line of lineStream) {
-      if (!line) continue;
       const arr = line.split(",");
       const leftId = arr[1];
       if (leftId == "-1") continue;
@@ -144,7 +141,6 @@ async function removeIdiom2(dict) {
       .pipeThrough(new TextDecoderStream())
       .pipeThrough(new TextLineStream());
     for await (const line of lineStream) {
-      if (!line) continue;
       const arr = line.split(",");
       const lemma = arr[0];
       const yomi = hiraToKana(arr[11]);
