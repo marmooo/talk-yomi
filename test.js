@@ -8,7 +8,6 @@ async function loadTestData(tsvFile) {
     .pipeThrough(new TextDecoderStream())
     .pipeThrough(new TextLineStream());
   for await (const line of lineStream) {
-    if (!line) continue;
     if (line.startsWith("#")) continue;
     // if (line.startsWith("#")) {
     //   line = line.slice(2);
@@ -27,7 +26,6 @@ async function initYomiDict(yomiFile) {
     .pipeThrough(new TextDecoderStream())
     .pipeThrough(new TextLineStream());
   for await (const line of lineStream) {
-    if (!line) continue;
     line.split("\n").forEach((line) => {
       const arr = line.split(",");
       const yomi = arr[0];

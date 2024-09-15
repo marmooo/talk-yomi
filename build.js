@@ -8,7 +8,6 @@ async function getGradedWords(filePath, threshold) {
     .pipeThrough(new TextDecoderStream())
     .pipeThrough(new TextLineStream());
   for await (const line of lineStream) {
-    if (!line) continue;
     const arr = line.split(",");
     const word = arr[0];
     const count = parseInt(arr[1]);
