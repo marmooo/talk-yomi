@@ -5,7 +5,7 @@
 ## Build
 
 ```
-deno run --allow-read --allow-write build.js
-deno run --allow-read --allow-write yomi.js
+deno run -RWE build.js
+deno run -RW yomi.js
 bash build.sh
 ```
