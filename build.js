@@ -1,5 +1,5 @@
 import { TextLineStream } from "jsr:@std/streams/text-line-stream";
-import { YomiDict } from "npm:yomi-dict@0.1.8";
+import { YomiDict } from "npm:yomi-dict@0.2.0";
 
 async function getGradedWords(filePath, threshold) {
   const examples = [];
