@@ -195,23 +195,21 @@ function startGameTimer() {
   }, 1000);
 }
 
-let countdownTimer;
 function countdown() {
-  clearTimeout(countdownTimer);
   countPanel.classList.remove("d-none");
   infoPanel.classList.add("d-none");
   playPanel.classList.add("d-none");
   scorePanel.classList.add("d-none");
   const counter = document.getElementById("counter");
   counter.textContent = 3;
-  countdownTimer = setInterval(() => {
+  const timer = setInterval(() => {
     const colors = ["skyblue", "greenyellow", "violet", "tomato"];
     if (parseInt(counter.textContent) > 1) {
       const t = parseInt(counter.textContent) - 1;
       counter.style.backgroundColor = colors[t];
       counter.textContent = t;
     } else {
-      clearTimeout(countdownTimer);
+      clearInterval(timer);
       countPanel.classList.add("d-none");
       infoPanel.classList.remove("d-none");
       playPanel.classList.remove("d-none");
