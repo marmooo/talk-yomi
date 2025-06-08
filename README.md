@@ -18,7 +18,7 @@
   Apache-2.0
 
 ```
-deno run -RWE build.js
-deno run -RW yomi.js
+deno run -RWE build-dict.js
+deno run -RW build-yomi.js
 bash build.sh
 ```
