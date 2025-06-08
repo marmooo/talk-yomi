@@ -1,4 +1,4 @@
-import { TextLineStream } from "jsr:@std/streams/text-line-stream";
+import { TextLineStream } from "@std/streams";
 
 function hiraToKana(str) {
   return str.replace(/[ぁ-ゖ]/g, (match) => {

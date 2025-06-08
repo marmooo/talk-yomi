@@ -1,5 +1,5 @@
-import { TextLineStream } from "jsr:@std/streams/text-line-stream";
-import { assertEquals } from "jsr:@std/assert/equals";
+import { TextLineStream } from "@std/streams";
+import { assertEquals } from "@std/assert";
 
 async function loadTestData(tsvFile) {
   const arr = [];
