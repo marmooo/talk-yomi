@@ -11,9 +11,10 @@ let problemCandidate;
 let answerKanji = "漢字";
 let answerYomis = ["かんじ"];
 let correctCount = problemCount = 0;
-let audioContext;
-const audioBufferCache = {};
 let japaneseVoices = [];
+let audioContext;
+let voiceStopped = false;
+const audioBufferCache = {};
 loadVoices();
 const voiceInput = setVoiceInput();
 loadConfig();
@@ -191,12 +192,17 @@ function startGameTimer() {
     } else {
       clearInterval(gameTimer);
       playAudio("end");
-      playPanel.classList.add("d-none");
-      scorePanel.classList.remove("d-none");
-      document.getElementById("score").textContent = correctCount;
-      document.getElementById("total").textContent = problemCount;
+      scoring();
+      stopVoiceInput();
     }
   }, 1000);
+}
+
+function scoring() {
+  playPanel.classList.add("d-none");
+  scorePanel.classList.remove("d-none");
+  document.getElementById("score").textContent = correctCount;
+  document.getElementById("total").textContent = problemCount;
 }
 
 function countdown() {
@@ -239,11 +245,9 @@ function setVoiceInput() {
     // voiceInput.interimResults = true;
     voiceInput.continuous = true;
 
-    voiceInput.onstart = voiceInputOnStart;
     voiceInput.onend = () => {
-      if (!speechSynthesis.speaking) {
-        voiceInput.start();
-      }
+      if (voiceStopped) return;
+      voiceInput.start();
     };
     voiceInput.onresult = (event) => {
       const replyText = event.results[0][0].transcript;
@@ -255,29 +259,26 @@ function setVoiceInput() {
         replyObj.textContent = "⭕ " + replyText;
         nextProblem();
         correctCount += 1;
+        replyPlease.classList.remove("d-none");
+        reply.classList.add("d-none");
       } else {
         playAudio("incorrect");
         replyObj.textContent = replyText;
+        replyPlease.classList.add("d-none");
+        reply.classList.remove("d-none");
       }
-      replyPlease.classList.add("d-none");
-      reply.classList.remove("d-none");
       voiceInput.stop();
     };
     return voiceInput;
   }
 }
 
-function voiceInputOnStart() {
+function startVoiceInput() {
+  voiceStopped = false;
   document.getElementById("startVoiceInput").classList.add("d-none");
   document.getElementById("stopVoiceInput").classList.remove("d-none");
-}
-
-function voiceInputOnStop() {
-  document.getElementById("startVoiceInput").classList.remove("d-none");
-  document.getElementById("stopVoiceInput").classList.add("d-none");
-}
-
-function startVoiceInput() {
+  replyPlease.classList.remove("d-none");
+  reply.classList.add("d-none");
   try {
     voiceInput.start();
   } catch {
@@ -286,8 +287,12 @@ function startVoiceInput() {
 }
 
 function stopVoiceInput() {
-  voiceInputOnStop();
-  voiceInput.stop();
+  voiceStopped = true;
+  document.getElementById("startVoiceInput").classList.remove("d-none");
+  document.getElementById("stopVoiceInput").classList.add("d-none");
+  replyPlease.classList.remove("d-none");
+  reply.classList.add("d-none");
+  voiceInput.abort();
 }
 
 function initYomiDict() {
