@@ -1,9 +1,9 @@
-const replyPlease = document.getElementById("replyPlease");
-const reply = document.getElementById("reply");
 const playPanel = document.getElementById("playPanel");
 const infoPanel = document.getElementById("infoPanel");
 const countPanel = document.getElementById("countPanel");
 const scorePanel = document.getElementById("scorePanel");
+const replyPlease = document.getElementById("replyPlease");
+const reply = document.getElementById("reply");
 const gameTime = 180;
 let yomiDict = new Map();
 let problems = [];
@@ -45,10 +45,6 @@ function createAudioContext() {
 }
 
 function unlockAudio() {
-  const uttr = new SpeechSynthesisUtterance("");
-  uttr.lang = "ja-JP";
-  speechSynthesis.speak(uttr);
-
   if (audioContext) {
     audioContext.resume();
   } else {
@@ -162,7 +158,7 @@ function nextProblem() {
   hideAnswer();
   document.getElementById("problem").textContent = answerKanji;
   document.getElementById("answer").textContent = answerYomis.join(", ");
-  document.getElementById("reply").textContent = "";
+  reply.textContent = "";
   startVoiceInput();
 }
 
@@ -206,6 +202,7 @@ function scoring() {
 }
 
 function countdown() {
+  speak(""); // unlock
   countPanel.classList.remove("d-none");
   infoPanel.classList.add("d-none");
   playPanel.classList.add("d-none");
@@ -251,19 +248,18 @@ function setVoiceInput() {
     };
     voiceInput.onresult = (event) => {
       const replyText = event.results[0][0].transcript;
-      const replyObj = document.getElementById("reply");
       const correct = answerYomis
         .some((answerYomi) => isEquals(replyText, answerYomi, yomiDict));
       if (correct) {
         playAudio("correct");
-        replyObj.textContent = "⭕ " + replyText;
+        reply.textContent = "⭕ " + replyText;
         nextProblem();
         correctCount += 1;
         replyPlease.classList.remove("d-none");
         reply.classList.add("d-none");
       } else {
         playAudio("incorrect");
-        replyObj.textContent = replyText;
+        reply.textContent = replyText;
         replyPlease.classList.add("d-none");
         reply.classList.remove("d-none");
       }
