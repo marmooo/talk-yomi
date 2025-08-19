@@ -10,7 +10,8 @@ let problems = [];
 let problemCandidate;
 let answerKanji = "漢字";
 let answerYomis = ["かんじ"];
-let correctCount = problemCount = 0;
+let correctCount = 0;
+let problemCount = 0;
 let japaneseVoices = [];
 let audioContext;
 let voiceStopped = false;
@@ -162,18 +163,16 @@ function nextProblem() {
   startVoiceInput();
 }
 
-function initProblems() {
+async function initProblems() {
   const grade = document.getElementById("gradeOption").selectedIndex + 1;
-  fetch("data/" + grade + ".tsv")
-    .then((response) => response.text())
-    .then((tsv) => {
-      problems = [];
-      tsv.trimEnd().split(/\n/).forEach((line) => {
-        const [kanji, yomis] = line.split("\t");
-        problems.push([kanji, yomis.split("|")]);
-      });
-      problemCandidate = problems.slice();
-    });
+  const response = await fetch("data/" + grade + ".tsv");
+  const tsv = await response.text();
+  problems = [];
+  tsv.trimEnd().split(/\n/).forEach((line) => {
+    const [kanji, yomis] = line.split("\t");
+    problems.push([kanji, yomis.split("|")]);
+  });
+  problemCandidate = problems.slice();
 }
 
 let gameTimer;
@@ -555,7 +554,7 @@ function isEquals(reply, answer, yomiDict) {
   return false;
 }
 
-initProblems();
+await initProblems();
 initYomiDict();
 
 document.getElementById("toggleDarkMode").onclick = toggleDarkMode;
