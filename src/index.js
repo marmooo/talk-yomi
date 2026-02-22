@@ -461,105 +461,139 @@ function formatSentence(sentence) {
     .replace(/\d+/g, (n) => numbersToKanji(n));
 }
 
-function isEqualsYomi(reply, answer, yomiDict) {
-  // 音声認識では記号が付かないので、解答側で使う一部記号だけを揃える
+function matchesYomi(reply, answer, yomiDict, debug = false) {
   const formatedReply = formatSentence(reply);
   const formatedAnswer = formatSentence(answer);
-  const maxLength = 5; // build.js で制限して高速化 (普通は残り文字数)
-  const maxYomiNum = 10; // yomi-dict の最大読み方パターン数
+  const maxLength = 5;
+  const maxYomiNum = 10;
   const stop = formatedAnswer.length * formatedAnswer.length * maxYomiNum;
   let cnt = 0;
-  let i = 0;
-  let j = 1;
-  let k = 0;
-  let l = 0;
-  const pi = [0];
-  const pk = [0];
-  const pj = [1];
-  let pl = [];
-  while (i < formatedReply.length) {
-    cnt += 1;
-    if (cnt > stop) return false;
-    const str = formatedReply.slice(i, i + j);
-    if (yomiDict.has(str)) {
-      const yomis = yomiDict.get(str);
-      const matched = yomis.filter((yomi) => {
-        const check = formatedAnswer.slice(k, k + yomi.length);
-        if (yomi == check) {
-          return true;
-        } else {
-          return false;
+
+  const log = (...args) => {
+    if (debug) console.log(...args);
+  };
+
+  // 位置 i（reply）と k（answer）から試せる候補リストを作る。
+  // maxLength から 1 の順（長いgramを優先）で辞書を引き、
+  // answer の位置 k からの文字列と一致する読みがあれば候補に追加する。
+  // 辞書にない文字列は直接一致（カタカナ同士など）も候補に加える。
+  // 戻り値: [{ str, jj, matched }] の配列
+  //   str     : reply から切り出した文字列
+  //   jj      : str の文字数（reply を何文字進めるか）
+  //   matched : answer と一致した読みの配列（yomiDict の値のサブセット）
+  function getCandidates(i, k) {
+    const candidates = [];
+    for (let jj = maxLength; jj >= 1; jj--) {
+      const str = formatedReply.slice(i, i + jj);
+      if (str === "") continue;
+      if (yomiDict.has(str)) {
+        const matched = yomiDict.get(str).filter((yomi) =>
+          formatedAnswer.slice(k, k + yomi.length) == yomi
+        );
+        if (matched.length > 0) {
+          candidates.push({ str, jj, matched });
         }
-      });
-      pl = matched;
-      if (matched.length > 0) {
-        const yomi = matched[l];
-        if (yomi) {
-          pi.push(i);
-          pj.push(j);
-          pk.push(k);
-          i += j;
-          k += yomi.length;
-          j = 1;
-          l = 0;
-          if (i == formatedReply.length) {
-            if (k == formatedAnswer.length) {
-              break;
-            } else {
-              pi.pop();
-              pj.pop();
-              pk.pop();
-              i = pi.pop(); // 前の文字に戻って
-              j = pj.pop() + 1; // gram を増やす
-              k = pk.pop();
-            }
-          }
-        } else {
-          j = pj.at(-1) + 1;
-          l = 0;
-        }
-      } else { // 辞書に登録はされているが読みの選択が悪く一致しない時など
-        if (j >= maxLength || j >= formatedAnswer.length) {
-          if (pi.length == 0) {
-            j += 1;
-            l += 0;
-          } else {
-            i = pi.pop(); // 前の文字に戻って
-            j = pj.pop() + 1; // gram を増やす
-            k = pk.pop();
-          }
-        } else { // gramを増やして一致をさがす
-          j += 1;
-          l = 0;
-        }
-      }
-    } else if (str == formatedAnswer.slice(k, k + j)) {
-      pj.push(j);
-      i += j;
-      k += j;
-      l = 0;
-      j = 1;
-      pi.push(i);
-      pk.push(k);
-      if (i == formatedReply.length) break;
-      // 辞書に読みが登録されていない時
-    } else {
-      if (pl.length > l + 1) { // 読みが複数あれば
-        l += 1;
-        k = pk.at(-1) + pl[l].length; // その読みを試してみる
-      } else if (j == maxLength) { // 前方の読みが合わないなら
-        i = pi.pop(); // 前の文字に戻って
-        j = pj.pop() + 1; // gram を増やす
-        k = pk.pop();
-      } else { // gramを増やして一致をさがす
-        j += 1;
+      } else if (str == formatedAnswer.slice(k, k + jj)) {
+        // 辞書にない文字列（カタカナや英数字など）は直接一致を試みる
+        candidates.push({ str, jj, matched: [str] });
       }
     }
+    return candidates;
   }
-  if (k == formatedAnswer.length) {
-    return true;
-  } else {
-    return false;
+
+  // バックトラック付きの照合ループ
+  // 基本戦略：
+  //   1. 現在位置 i から getCandidates で候補リストを作る
+  //   2. 候補を順番に試して reply と answer を同時に消費していく
+  //   3. reply を最後まで消費したとき answer も最後まで消費できていれば成功
+  //   4. 失敗したらスタックから前の状態を復元して次の候補を試す
+  //
+  // スタックの各要素: { i, k, candidates, ci, l }
+  //   i          : reply の位置
+  //   k          : answer の位置
+  //   candidates : その i, k で作った候補リスト
+  //   ci         : candidates の現在インデックス
+  //   l          : matched（読み候補）の現在インデックス
+  //
+  // 次の候補への移り方：
+  //   - まず matched の次の読み（l+1）を試す
+  //   - matched が尽きたら candidates の次のgramパターン（ci+1）へ
+  //   - candidates も尽きたらスタックをポップしてさらに前へ戻る
+  const stack = [];
+
+  let i = 0;
+  let k = 0;
+  let candidates = getCandidates(i, k);
+  let ci = 0; // candidates のインデックス
+  let l = 0; // matched のインデックス
+
+  while (true) {
+    cnt += 1;
+    if (cnt > stop) {
+      log("STOP");
+      return false;
+    }
+
+    log(
+      `cnt=${cnt} i=${i} k=${k} ci=${ci} l=${l} candidates=${
+        JSON.stringify(candidates.map((c) => c.str))
+      }`,
+    );
+
+    if (ci < candidates.length && candidates[ci].matched[l]) {
+      // 現在の候補で前進できる
+      const { str, jj, matched } = candidates[ci];
+      const yomi = matched[l];
+      log(`  -> advance str=${str} yomi=${yomi}`);
+
+      // 前に戻れるよう現在の状態をスタックに積む
+      stack.push({ i, k, candidates, ci, l });
+
+      i += jj;
+      k += yomi.length;
+      l = 0;
+
+      if (i == formatedReply.length) {
+        if (k == formatedAnswer.length) {
+          // reply と answer を同時に使い切った → 一致成功
+          log(`  -> done!`);
+          return true;
+        } else {
+          // reply は終わったが answer が残っている → バックトラック
+          log(
+            `  -> end of reply but k=${k} != ${formatedAnswer.length}, backtrack`,
+          );
+          const prev = stack.pop();
+          if (!prev) return false;
+          ({ i, k, candidates, ci, l } = prev);
+          // 次の候補へ
+          if (candidates[ci].matched[l + 1]) {
+            l += 1; // 同じgramで別の読みを試す
+          } else {
+            ci += 1; // 次のgramパターンへ
+            l = 0;
+          }
+        }
+      } else {
+        // まだ reply が残っている → 次の位置の候補リストを作る
+        candidates = getCandidates(i, k);
+        ci = 0;
+        l = 0;
+      }
+    } else {
+      // 現在位置の候補が全部尽きた → バックトラック
+      log(`  -> backtrack`);
+      const prev = stack.pop();
+      if (!prev) return false; // スタックが空 = どこにも戻れない → 不一致
+      ({ i, k, candidates, ci, l } = prev);
+      // 次の候補へ
+      if (candidates[ci].matched[l + 1]) {
+        l += 1; // 同じgramで別の読みを試す
+      } else {
+        ci += 1; // 次のgramパターンへ
+        l = 0;
+      }
+    }
   }
 }
 
@@ -575,7 +609,7 @@ function formatLongNote(text) {
   return text[0] + text.slice(1).replace(/[アイウエオ]/g, "ー");
 }
 
-function isEqualsLongNote(reply, answer) {
+function matchesLongNote(reply, answer) {
   const formatReply = formatLongNote(reply);
   const formatAnswer = formatLongNote(answer);
   if (formatAnswer == formatReply) {
@@ -586,8 +620,8 @@ function isEqualsLongNote(reply, answer) {
 }
 
 function isEquals(reply, answer, yomiDict) {
-  if (isEqualsLongNote(reply, answer)) return true;
-  if (isEqualsYomi(reply, answer, yomiDict)) return true;
+  if (matchesLongNote(reply, answer)) return true;
+  if (matchesYomi(reply, answer, yomiDict)) return true;
   return false;
 }
 
