@@ -1,13 +1,17 @@
 import { TextLineStream } from "@std/streams";
 import { YomiDict } from "yomi-dict";
 
+// https://jsr.io/@std/streams/doc/unstable-to-lines/~/toLines
+function toLines(readable, options) {
+  return readable
+    .pipeThrough(new TextDecoderStream())
+    .pipeThrough(new TextLineStream(), options);
+}
+
 async function getGradedWords(filePath, threshold) {
   const examples = [];
   const file = await Deno.open(filePath);
-  const lineStream = file.readable
-    .pipeThrough(new TextDecoderStream())
-    .pipeThrough(new TextLineStream());
-  for await (const line of lineStream) {
+  for await (const line of toLines(file.readable)) {
     const arr = line.split(",");
     const word = arr[0];
     const count = parseInt(arr[1]);
